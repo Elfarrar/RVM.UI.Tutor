@@ -228,6 +228,26 @@
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* Toque (#70): na faixa do celular, X e botões com 44 px, o alvo recomendado para o dedo. */
+.tutor-popover--sheet .tutor-close {
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+.tutor-popover--sheet > .tutor-header {
+    padding-inline: 3.25rem;
+}
+
+.tutor-popover--sheet .tutor-body--solo .tutor-text {
+    margin-right: 2.5rem;
+}
+
+.tutor-popover--sheet .tutor-btn {
+    min-height: 2.75rem;
+}
+
 /* Escuro: segue o sistema, e o app força com data-tutor-theme="dark|light" em qualquer ancestral. */
 @media (prefers-color-scheme: dark) {
     .tutor-root {

@@ -5,6 +5,13 @@ import { test, expect, type Page } from '@playwright/test';
 
 const balao = (page: Page) => page.getByRole('dialog');
 
+// #70: os 44 px do toque são só da faixa do celular; no desktop o balão fica como era.
+test('no desktop o X continua com 32 px', async ({ page }) => {
+  await abrirTour(page);
+  const x = (await balao(page).getByRole('button', { name: 'Fechar' }).boundingBox())!;
+  expect(x.width).toBe(32);
+});
+
 async function abrirTour(page: Page) {
   await page.goto('/tour-simples');
   await page.getByRole('button', { name: 'Iniciar tour' }).click();

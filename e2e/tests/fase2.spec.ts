@@ -111,6 +111,22 @@ test.describe('celular', () => {
     const alvo = (await page.locator('[data-tour="rodape"]').boundingBox())!;
     expect(alvo.y + alvo.height).toBeLessThanOrEqual(faixa.y);
   });
+
+  // #70: alvos de toque de 44 px na faixa (X, Pular, Voltar, Concluir); o título não passa por baixo do X.
+  test('na faixa o X e os botões têm 44 px para o dedo', async ({ page }) => {
+    await page.goto('/tour-simples');
+    await page.getByRole('button', { name: 'Iniciar tour' }).click();
+    await balao(page).getByRole('button', { name: 'Próximo' }).click();
+    await expect(balao(page).getByText('2 de 4')).toBeVisible();
+    for (const nome of ['Fechar', 'Pular', 'Voltar', 'Próximo']) {
+      const caixa = (await balao(page).getByRole('button', { name: nome }).boundingBox())!;
+      expect(caixa.height, nome).toBeGreaterThanOrEqual(44);
+    }
+    const x = (await balao(page).getByRole('button', { name: 'Fechar' }).boundingBox())!;
+    expect(x.width).toBeGreaterThanOrEqual(44);
+    const titulo = (await balao(page).locator('.tutor-title').boundingBox())!;
+    expect(titulo.x + titulo.width).toBeLessThanOrEqual(x.x);
+  });
 });
 
 test.describe('celular pequeno', () => {
