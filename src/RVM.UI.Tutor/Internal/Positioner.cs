@@ -72,33 +72,43 @@ internal static class Positioner
         }
     }
 
-    /// <summary>Altura máxima do apresentador; ele ocupa até 45% da altura da janela.</summary>
+    /// <summary>Altura máxima padrão do apresentador (<see cref="TutorOptions.PresenterMaxHeight"/>).</summary>
     public const double PresenterMaxHeight = 300;
+
+    /// <summary>Fração padrão da altura da janela que o apresentador pode ocupar (<see cref="TutorOptions.PresenterViewportRatio"/>).</summary>
+    public const double PresenterViewportRatio = 0.45;
 
     /// <summary>Abaixo disto o apresentador fica pequeno demais para ajudar: some.</summary>
     public const double PresenterMinHeight = 140;
 
+    // Degrau do encolhimento quando o tamanho cheio não cabe em canto nenhum.
+    private const double PresenterShrink = 0.9;
+
     /// <summary>
     /// Onde fica o apresentador (retrato 2:3, apoiado no rodapé): canto inferior direito, senão o esquerdo,
-    /// o primeiro que não cobre o recorte nem o balão. <c>null</c> = nenhum cabe, ou faixa inferior.
+    /// o primeiro que não cobre o recorte nem o balão. Sem canto livre no tamanho cheio, encolhe até caber
+    /// (apresentador grande, #60). <c>null</c> = nenhum cabe nem no mínimo, ou faixa inferior.
     /// </summary>
     public static Box? Presenter(Box? hole, PopoverPosition popover, double popWidth, double popHeight,
-        double viewportWidth, double viewportHeight)
+        double viewportWidth, double viewportHeight,
+        double maxHeight = PresenterMaxHeight, double viewportRatio = PresenterViewportRatio)
     {
-        var height = Math.Min(PresenterMaxHeight, viewportHeight * 0.45);
-        if (popover.Sheet || height < PresenterMinHeight)
+        if (popover.Sheet)
             return null;
-        var width = height * 2 / 3;
         var balloon = new Box(popover.Left, popover.Top, popWidth, popHeight);
-        Box[] corners =
-        [
-            new(viewportWidth - width - Margin, viewportHeight - height, width, height),
-            new(Margin, viewportHeight - height, width, height),
-        ];
-        foreach (var corner in corners)
+        for (var height = Math.Min(maxHeight, viewportHeight * viewportRatio); height >= PresenterMinHeight; height *= PresenterShrink)
         {
-            if (!corner.Intersects(balloon) && !(hole is { } h && corner.Intersects(h)))
-                return corner;
+            var width = height * 2 / 3;
+            Box[] corners =
+            [
+                new(viewportWidth - width - Margin, viewportHeight - height, width, height),
+                new(Margin, viewportHeight - height, width, height),
+            ];
+            foreach (var corner in corners)
+            {
+                if (!corner.Intersects(balloon) && !(hole is { } h && corner.Intersects(h)))
+                    return corner;
+            }
         }
         return null;
     }

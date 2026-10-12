@@ -15,6 +15,27 @@ export function createHost(dotnet) {
   let reservedPad = null; // padding-bottom inline do body antes de a faixa reservar espaço (null = nada reservado)
   let voice = null, stopWaiting = null;
 
+  // A pose animada do apresentador só aparece enquanto a voz toca (#60): o atributo no <html> liga o CSS,
+  // e o vídeo roda do começo a cada fala e para junto com ela. Menos movimento pedido: nunca.
+  // O atributo é da página: vale um TutorHost por página (o layout do app).
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  let speaking = false;
+  const talk = on => {
+    speaking = on && !reduce.matches;
+    document.documentElement.toggleAttribute('data-tutor-speaking', speaking);
+    for (const v of document.querySelectorAll('video.tutor-presenter--talking')) {
+      if (speaking) { v.currentTime = 0; v.play().catch(() => {}); } else v.pause();
+    }
+  };
+  // Vídeo que entra (ou troca de src) no meio da fala — "Mostrar Aly", re-render — começa a rodar ao carregar.
+  // Eventos de mídia não sobem; na captura chegam ao documento.
+  document.addEventListener('loadeddata', e => {
+    if (speaking && e.target.matches?.('video.tutor-presenter--talking')) e.target.play().catch(() => {});
+  }, true);
+  // Safari toca WebM sem o canal alfa (fundo opaco): lá o vídeo fica escondido e a pose, parada.
+  if (/^((?!chrome|chromium|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent))
+    document.documentElement.setAttribute('data-tutor-no-alpha-video', '');
+
   // Narração. Sem gesto do usuário na página (tour aberto sozinho no 1º login) o som não começa:
   // espera o primeiro clique/tecla (pointerup, não pointerdown: no toque a ativação vem ao soltar).
   // Navegador sem userActivation tenta, e a recusa vira a mesma espera.
@@ -27,6 +48,7 @@ export function createHost(dotnet) {
       voice.load();
     }
     voice = null;
+    talk(false);
   };
   const afterGesture = play => {
     const go = () => { stop(); play(); };
@@ -42,6 +64,8 @@ export function createHost(dotnet) {
     silence();
     if (!url) return;
     const audio = voice = new Audio(url);
+    audio.addEventListener('playing', () => { if (voice === audio) talk(true); });
+    for (const e of ['pause', 'ended', 'error']) audio.addEventListener(e, () => { if (voice === audio) talk(false); });
     const play = () => {
       if (voice !== audio) return;
       audio.play().catch(e => { if (e?.name === 'NotAllowedError' && voice === audio) afterGesture(play); });

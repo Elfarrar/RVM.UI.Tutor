@@ -29,15 +29,25 @@
         @if (ShowPresenter && _presenterPose is { } pose && _presenterBox is { } box)
         {
             @* Decorativa: quem fala é o balão. Sem clique (a camada não pega), não cobre alvo nem balão.
-               A animada só para quem não pediu menos movimento; o navegador escolhe, sem JS. *@
-            <picture aria-hidden="true">
-                @if (pose.Animated is { } animated)
+               A pose parada fica sempre; a animada fica por cima e só aparece enquanto a voz do passo toca
+               (o tutor.js liga data-tutor-speaking), e nunca com menos movimento pedido (#60). *@
+            var place = $"top:{Px(box.Y)}px;left:{Px(box.X)}px;width:{Px(box.Width)}px;height:{Px(box.Height)}px";
+            @* Com a animada por cima, a parada some enquanto ela fala: onde o quadro animado é transparente (a mão
+               que se mexeu) a parada apareceria — duas mãos (#60). Safari esconde o vídeo; aí a parada fica. *@
+            var under = pose.Animated is null ? null : IsVideo(pose.Animated) ? " tutor-presenter--under tutor-presenter--under-video" : " tutor-presenter--under";
+            <img class="tutor-presenter@(under)" src="@pose.Still" alt="" aria-hidden="true" style="@place" />
+            @if (pose.Animated is { } animated)
+            {
+                @if (IsVideo(animated))
                 {
-                    <source srcset="@animated" media="(prefers-reduced-motion: no-preference)" />
+                    <video class="tutor-presenter tutor-presenter--talking" src="@animated" poster="@pose.Still"
+                           muted loop playsinline preload="auto" aria-hidden="true" style="@place"></video>
                 }
-                <img class="tutor-presenter" src="@pose.Still" alt=""
-                     style="top:@Px(box.Y)px;left:@Px(box.X)px;width:@Px(box.Width)px;height:@Px(box.Height)px" />
-            </picture>
+                else
+                {
+                    <img class="tutor-presenter tutor-presenter--talking" src="@animated" alt="" aria-hidden="true" style="@place" />
+                }
+            }
         }
 
         @if (ShowWaiting)
@@ -46,7 +56,9 @@
             @* Diálogo com foco, como o balão: o leitor de tela lê o texto ao focar e o Tab fica nos botões. *@
             <div @ref="_waitingBox" class="@WaitingClass" role="dialog" aria-modal="true"
                  aria-labelledby="@WaitingId" tabindex="-1">
-                <p id="@WaitingId" class="tutor-text">@Text("Waiting")</p>
+                <div class="tutor-body tutor-body--solo">
+                    <p id="@WaitingId" class="tutor-text">@Text("Waiting")</p>
+                </div>
                 <div class="tutor-footer">
                     <div class="tutor-actions">
                         @if (Tutor.Options.AllowSkip)
@@ -70,29 +82,34 @@
                 }
                 @if (_mode == HostMode.Tour && Tutor.CurrentStep is { } step)
                 {
-                    <h2 id="@TitleId" class="tutor-title">@step.Title</h2>
-                    <p id="@TextId" class="tutor-text">@step.Text</p>
-                    @if (step.Content is not null)
-                    {
-                        <div class="tutor-content">@step.Content</div>
-                    }
-                    @if (Tutor.Presenter is not null || ShowMute)
-                    {
-                        <div class="tutor-tools">
-                            @if (Tutor.Presenter is { } presenter)
-                            {
-                                <button type="button" class="tutor-btn tutor-btn--small" @onclick="OnTogglePresenter">
-                                    @string.Format(_culture, Text(Tutor.PresenterShown ? "HidePresenter" : "ShowPresenter"), presenter.Name)
-                                </button>
-                            }
-                            @if (ShowMute)
-                            {
-                                <button type="button" class="tutor-btn tutor-btn--small" @onclick="OnToggleMute">
-                                    @Text(Tutor.Muted ? "Unmute" : "Mute")
-                                </button>
-                            }
-                        </div>
-                    }
+                    @* Três faixas separadas por linha (#60): título no meio, corpo, rodapé com contagem e ações. *@
+                    <div class="tutor-header">
+                        <h2 id="@TitleId" class="tutor-title">@step.Title</h2>
+                    </div>
+                    <div class="tutor-body">
+                        <p id="@TextId" class="tutor-text">@step.Text</p>
+                        @if (step.Content is not null)
+                        {
+                            <div class="tutor-content">@step.Content</div>
+                        }
+                        @if (Tutor.Presenter is not null || ShowMute)
+                        {
+                            <div class="tutor-tools">
+                                @if (Tutor.Presenter is { } presenter)
+                                {
+                                    <button type="button" class="tutor-btn tutor-btn--small" @onclick="OnTogglePresenter">
+                                        @string.Format(_culture, Text(Tutor.PresenterShown ? "HidePresenter" : "ShowPresenter"), presenter.Name)
+                                    </button>
+                                }
+                                @if (ShowMute)
+                                {
+                                    <button type="button" class="tutor-btn tutor-btn--small" @onclick="OnToggleMute">
+                                        @Text(Tutor.Muted ? "Unmute" : "Mute")
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
                     <div class="tutor-footer">
                         @if (Tutor.Options.ShowProgress)
                         {
@@ -118,7 +135,9 @@
                 }
                 else if (Tutor.Highlight is { } highlight)
                 {
-                    <p id="@TextId" class="tutor-text">@highlight.Text</p>
+                    <div class="tutor-body tutor-body--solo">
+                        <p id="@TextId" class="tutor-text">@highlight.Text</p>
+                    </div>
                 }
                 @* Por último no DOM: na ordem de Tab o × vem depois das ações (fica no canto pelo CSS). *@
                 <button type="button" class="tutor-close" aria-label="@Text("Close")" @onclick="OnCloseClick">&times;</button>

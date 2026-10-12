@@ -68,7 +68,7 @@ public static class TourLancamentos
 | `WaitForTargetMs` | quanto esperar o alvo aparecer (dado que carrega, componente que abre); padrão 3000. Espera de mais de 400 ms mostra "Procurando o próximo passo…" com Pular e Fechar. Passo que costuma faltar (`Skip` para quem não tem dado): use uma espera curta |
 | `Pose` | imagem do apresentador neste passo; `null` = a padrão dele (§ 5) |
 | `Audio` | URL do mp3 narrado no passo, no idioma do texto (§ 5) |
-| `PoseAnimated` | versão animada de `Pose` (WebP/GIF/SVG animado); quem pede menos movimento vê a parada (§ 5) |
+| `PoseAnimated` | versão animada de `Pose` (WebM com alfa, ou WebP/GIF/SVG animado); aparece só enquanto a voz toca, nunca para quem pede menos movimento (§ 5) |
 
 `TourDefinition.ShowAgainOnNewVersion` (padrão `true`): subir a `Version` faz o tour reaparecer
 para quem viu a anterior.
@@ -156,12 +156,18 @@ var tour = new TourDefinition("lancamentos-primeiro", 1,
 ```
 
 - **Imagem:** retrato 2:3 com fundo transparente (PNG/WebP/SVG). Fica no canto direito, ou no
-  esquerdo se o direito cobre o alvo ou o balão; some se nenhum couber, abaixo de 480 px e em
-  janela baixa. Até 300 px de altura (45% da janela). Decorativa (`alt=""`): quem fala é o balão.
-- **Animação:** `TourPresenter.ImageAnimated` e `TourStep.PoseAnimated` são opcionais. O host usa
-  `<picture>`: a animada só com `prefers-reduced-motion: no-preference`; quem pede menos movimento vê
-  a parada (`Image`/`Pose`). Passo com `Pose` própria e sem `PoseAnimated` fica parado: não herda a
-  animação da imagem padrão.
+  esquerdo se o direito cobre o alvo ou o balão. Altura até `PresenterMaxHeight` (padrão 300 px) e
+  `PresenterViewportRatio` da janela (padrão 0,45); sem canto livre nesse tamanho, encolhe até caber
+  (mínimo 140 px) e só então some. Some também abaixo de 480 px. Decorativa (`alt=""`): quem fala é o balão.
+  ```csharp
+  builder.Services.AddRvmTutor(o => { o.PresenterMaxHeight = 750; o.PresenterViewportRatio = 0.8; }); // grande
+  ```
+- **Animação:** `TourPresenter.ImageAnimated` e `TourStep.PoseAnimated` são opcionais: vídeo WebM com
+  alfa (ou MP4) vira `<video>`; WebP/GIF/SVG animado, `<img>`. A animada fica por cima da parada e
+  **só aparece enquanto a voz do passo toca**: a voz acabou, foi silenciada ou o passo não tem áudio,
+  fica a parada. Nunca com `prefers-reduced-motion: reduce`, nem no Safari para vídeo (ele não mostra
+  o alfa do WebM). Passo com `Pose` própria e sem `PoseAnimated` fica parado: não herda a animação da
+  imagem padrão.
 - **Chave:** o dev define o padrão (`ShowPresenter` no registro ou no tour); o usuário alterna no
   balão ("Ocultar Aly" / "Mostrar Aly"). A escolha vale no tour inteiro, fica no progresso e volta
   ao retomar e ao recomeçar com `force`.

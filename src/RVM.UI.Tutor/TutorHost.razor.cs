@@ -90,6 +90,13 @@ public partial class TutorHost : IAsyncDisposable
     private bool ShowPresenter => _mode == HostMode.Tour && Tutor.PresenterShown &&
         Tutor.Engine.State is TutorState.Showing or TutorState.Preparing;
 
+    // Pose animada em vídeo (WebM com alfa, MP4): <video>; o resto (WebP, GIF, SVG animado) é <img>.
+    private static bool IsVideo(string url)
+    {
+        var path = url.Split('?', '#')[0];
+        return path.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
+    }
+
     private bool ShowMute => Tutor.CurrentStep?.Audio is not null && Tutor.CanSpeak;
 
     // Passo que espera clique/campo: sem "Próximo". Volta se o alvo sumiu (centralizado) ou se a ação
@@ -356,7 +363,8 @@ public partial class TutorHost : IAsyncDisposable
         var preferred = _mode == HostMode.Tour ? Tutor.CurrentStep?.Placement ?? Placement.Auto : Placement.Auto;
         _position = Positioner.Compute(Hole, _popoverWidth, _popoverHeight, _viewportWidth, _viewportHeight, preferred, Gap);
         _presenterBox = _mode == HostMode.Tour && Tutor.PresenterShown
-            ? Positioner.Presenter(Hole, _position.Value, _popoverWidth, _popoverHeight, _viewportWidth, _viewportHeight)
+            ? Positioner.Presenter(Hole, _position.Value, _popoverWidth, _popoverHeight, _viewportWidth, _viewportHeight,
+                Tutor.Options.PresenterMaxHeight, Tutor.Options.PresenterViewportRatio)
             : null;
         // Parada e animada vêm em par: o passo com pose própria não herda a animação da imagem padrão.
         _presenterTour = Tutor.Engine.Tour?.Id;

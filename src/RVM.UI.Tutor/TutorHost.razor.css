@@ -45,8 +45,9 @@
     pointer-events: auto;
     box-sizing: border-box;
     width: max-content;
-    max-width: min(22rem, calc(100vw - 16px));
-    padding: 1rem 1.125rem;
+    min-width: min(20rem, calc(100vw - 16px));
+    max-width: min(28rem, calc(100vw - 16px));
+    padding: 0;
     background: var(--tutor-bg, var(--_tutor-bg));
     color: var(--tutor-fg, var(--_tutor-fg));
     border: 1px solid var(--tutor-border, var(--_tutor-border));
@@ -76,8 +77,8 @@
 
 .tutor-close {
     position: absolute;
-    top: 0.375rem;
-    right: 0.375rem;
+    top: 0.5rem;
+    right: 0.5rem;
     width: 2rem;
     height: 2rem;
     border: 0;
@@ -90,14 +91,30 @@
 }
 
 .tutor-title {
-    margin: 0 2rem 0.375rem 0;
-    font-size: 1rem;
+    margin: 0;
+    font-size: 1.125rem;
     font-weight: 600;
+    text-align: center;
+}
+
+/* Três faixas separadas por linha (#60): cabeçalho com o título no meio, corpo, rodapé. */
+.tutor-header {
+    padding: 0.875rem 2.75rem;
+    border-bottom: 1px solid var(--tutor-border, var(--_tutor-border));
+}
+
+.tutor-body {
+    padding: 1rem 1.25rem;
 }
 
 .tutor-text {
-    margin: 0 2rem 0 0;
-    font-size: 0.9375rem;
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Sem cabeçalho (destaque avulso, aviso de espera): o texto não passa por baixo do ×. */
+.tutor-body--solo .tutor-text {
+    margin-right: 1.75rem;
 }
 
 .tutor-content {
@@ -108,7 +125,8 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-top: 1rem;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--tutor-border, var(--_tutor-border));
 }
 
 .tutor-progress {
@@ -167,6 +185,28 @@
     animation: tutor-presenter-in var(--tutor-transition, 0.2s ease);
 }
 
+/* Pose animada por cima da parada: só enquanto a voz toca (o tutor.js liga data-tutor-speaking). */
+.tutor-presenter--talking {
+    visibility: hidden;
+    animation: none;
+}
+
+:root[data-tutor-speaking] .tutor-presenter--talking {
+    visibility: visible;
+}
+
+:root[data-tutor-no-alpha-video] video.tutor-presenter--talking {
+    display: none;
+}
+
+:root[data-tutor-speaking] .tutor-presenter--under {
+    visibility: hidden;
+}
+
+:root[data-tutor-speaking][data-tutor-no-alpha-video] .tutor-presenter--under-video {
+    visibility: visible;
+}
+
 @keyframes tutor-presenter-in {
     from { opacity: 0; transform: translateY(8px); }
 }
@@ -193,7 +233,11 @@
     width: 100%;
     max-width: none;
     border-radius: var(--tutor-radius, 12px) var(--tutor-radius, 12px) 0 0;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.tutor-popover--sheet > .tutor-footer,
+.tutor-popover--sheet > .tutor-body--solo {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* Escuro: segue o sistema, e o app força com data-tutor-theme="dark|light" em qualquer ancestral. */
@@ -239,5 +283,9 @@
 
     .tutor-presenter {
         animation: none;
+    }
+
+    .tutor-presenter--talking {
+        display: none;
     }
 }

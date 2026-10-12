@@ -4,21 +4,34 @@ import { test, expect, type Page } from '@playwright/test';
 // registro (window.__falas), e o teste confere o que tocou e o que parou.
 
 const balao = (page: Page) => page.getByRole('dialog');
-const guia = (page: Page) => page.locator('.tutor-presenter');
+// A pose parada; a animada é a camada .tutor-presenter--talking por cima, visível só com a voz (#60).
+const guia = (page: Page) => page.locator('.tutor-presenter:not(.tutor-presenter--talking)');
+const falando = (page: Page) => page.locator('.tutor-presenter--talking');
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    const w = window as unknown as { __falas: string[] };
+    const w = window as unknown as { __falas: string[]; __vozes: HTMLMediaElement[] };
     w.__falas = [];
+    w.__vozes = [];
+    // Só a voz (Audio) entra no registro; o vídeo da pose animada não fala. O 'playing'/'pause'
+    // simulados são o que o tutor.js escuta para mostrar e esconder a animada.
     HTMLMediaElement.prototype.play = function () {
+      if (this instanceof HTMLVideoElement) return Promise.resolve();
       w.__falas.push(new URL(this.src).pathname);
+      w.__vozes.push(this);
+      queueMicrotask(() => this.dispatchEvent(new Event('playing')));
       return Promise.resolve();
     };
     HTMLMediaElement.prototype.pause = function () {
+      if (this instanceof HTMLVideoElement) return;
       w.__falas.push('pausa');
+      this.dispatchEvent(new Event('pause'));
     };
   });
 });
+
+const fimDaVoz = (page: Page) => page.evaluate(() =>
+  (window as unknown as { __vozes: HTMLMediaElement[] }).__vozes.at(-1)!.dispatchEvent(new Event('ended')));
 
 const falas = (page: Page) => page.evaluate(() => (window as unknown as { __falas: string[] }).__falas);
 
@@ -93,34 +106,45 @@ test('tela estreita esconde o apresentador e mantém a faixa', async ({ page }) 
   await expect(guia(page)).toHaveCount(0);
 });
 
-// #47: a pose animada vale só para quem não pediu menos movimento; o navegador escolhe pelo <picture>.
-const imagemCarregada = (page: Page) =>
-  guia(page).evaluate(img => new URL((img as HTMLImageElement).currentSrc).pathname);
-
-test('pose animada no navegador normal', async ({ page }) => {
+// #47/#60: a pose animada aparece só enquanto a voz toca e nunca para quem pede menos movimento.
+test('pose animada só enquanto a voz toca', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await abrirTour(page);
-  await expect.poll(() => imagemCarregada(page)).toBe('/apresentador/guia-acena-animado.svg');
+  await expect(guia(page)).toHaveAttribute('src', 'apresentador/guia-acena.svg');
+  await expect(falando(page)).toHaveAttribute('src', 'apresentador/guia-acena-animado.svg');
+  await expect(falando(page)).toBeVisible();
+  // A parada some enquanto ela fala: senão aparece por baixo do quadro animado (duas mãos, #60).
+  await expect(guia(page)).toBeHidden();
+
+  await fimDaVoz(page);
+  await expect(falando(page)).toBeHidden();
+  await expect(guia(page)).toBeVisible();
+
   await balao(page).getByRole('button', { name: 'Próximo' }).click();
-  await expect.poll(() => imagemCarregada(page)).toBe('/apresentador/guia-animado.svg');
+  await expect(falando(page)).toHaveAttribute('src', 'apresentador/guia-animado.svg');
+  await expect(falando(page)).toBeVisible();
+  await balao(page).getByRole('button', { name: 'Silenciar' }).click();
+  await expect(falando(page)).toBeHidden();
 });
 
-test('pose parada para quem pede menos movimento', async ({ page }) => {
+test('pose parada para quem pede menos movimento, mesmo com a voz', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await abrirTour(page);
-  await expect.poll(() => imagemCarregada(page)).toBe('/apresentador/guia-acena.svg');
-  await balao(page).getByRole('button', { name: 'Próximo' }).click();
-  await expect.poll(() => imagemCarregada(page)).toBe('/apresentador/guia.svg');
+  await expect.poll(() => falas(page)).toContain('/apresentador/passo-1.mp3');
+  await expect(guia(page)).toBeVisible();
+  await expect(falando(page)).toBeHidden();
 });
 
 test('trocar de passo não tira o apresentador da tela (sem refazer a entrada)', async ({ page }) => {
   await abrirTour(page);
-  await expect(guia(page)).toBeVisible();
+  await expect(guia(page)).toBeAttached(); // falando, a parada fica escondida sob a animada
   await page.evaluate(() => {
     const w = window as unknown as { __saidas: number };
     w.__saidas = 0;
     new MutationObserver(ms => {
-      for (const m of ms) m.removedNodes.forEach(n => { if (n.nodeName === 'PICTURE') w.__saidas++; });
+      for (const m of ms) m.removedNodes.forEach(n => {
+        if (n instanceof HTMLImageElement && n.matches('.tutor-presenter:not(.tutor-presenter--talking)')) w.__saidas++;
+      });
     }).observe(document.body, { childList: true, subtree: true });
   });
   await balao(page).getByRole('button', { name: 'Próximo' }).click();

@@ -30,7 +30,8 @@ public sealed record TourDefinition(string Id, int Version, IReadOnlyList<TourSt
 /// <param name="WaitForTargetMs">Quanto esperar o alvo aparecer (tela que carrega depois) antes de aplicar <paramref name="WhenTargetMissing"/>.</param>
 /// <param name="Pose">Imagem do apresentador neste passo; <c>null</c> = a padrão (<see cref="TourPresenter.Image"/>).</param>
 /// <param name="Audio">URL do áudio narrado no passo (mp3), no idioma do texto. Toca só depois de um gesto do usuário na página.</param>
-/// <param name="PoseAnimated">Versão animada de <paramref name="Pose"/>, opcional. Quem pede menos movimento vê a parada.
+/// <param name="PoseAnimated">Versão animada de <paramref name="Pose"/> (WebM com alfa, ou imagem animada), opcional.
+/// Aparece só enquanto a voz do passo toca; quem pede menos movimento vê a parada.
 /// Passo com <paramref name="Pose"/> e sem esta fica parado (não herda a animação da imagem padrão).</param>
 public sealed record TourStep(
     string? Target,

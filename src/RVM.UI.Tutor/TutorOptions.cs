@@ -26,4 +26,10 @@ public sealed class TutorOptions
 
     /// <summary>O apresentador começa visível. O usuário muda no balão, e a escolha fica no progresso do tour.</summary>
     public bool ShowPresenter { get; set; } = true;
+
+    /// <summary>Altura máxima do apresentador, em px. Sem canto livre nesse tamanho, ele encolhe até caber (mínimo 140 px; abaixo disso some).</summary>
+    public double PresenterMaxHeight { get; set; } = Internal.Positioner.PresenterMaxHeight;
+
+    /// <summary>Fração da altura da janela que o apresentador pode ocupar (0 a 1).</summary>
+    public double PresenterViewportRatio { get; set; } = Internal.Positioner.PresenterViewportRatio;
 }

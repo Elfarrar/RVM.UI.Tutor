@@ -160,4 +160,25 @@ public class PositionerTests
         Assert.Equal(180, box!.Value.Height);
         Assert.Equal(120, box.Value.Width);
     }
+
+    [Fact]
+    public void Apresentador_grande_usa_a_altura_e_a_fracao_configuradas()
+    {
+        var box = Positioner.Presenter(null, TopLeftBalloon, PopW, PopH, W, H, maxHeight: 750, viewportRatio: 0.8);
+        Assert.Equal(H * 0.8, box!.Value.Height);
+        Assert.Equal(H - H * 0.8, box.Value.Y);
+    }
+
+    // Balão centralizado (passo sem alvo) cobre os dois cantos no tamanho cheio: encolhe até um caber, não some (#60).
+    [Fact]
+    public void Apresentador_grande_encolhe_ate_caber_ao_lado_do_balao()
+    {
+        const double vh = 953, popW = 440, popH = 200;
+        var centered = new PopoverPosition(true, Placement.Auto, (vh - popH) / 2, (W - popW) / 2, 0);
+        var box = Positioner.Presenter(null, centered, popW, popH, W, vh, maxHeight: 750, viewportRatio: 0.8);
+        Assert.NotNull(box);
+        Assert.True(box!.Value.Height < 750);
+        Assert.True(box.Value.Height >= Positioner.PresenterMinHeight);
+        Assert.False(box.Value.Intersects(new Box(centered.Left, centered.Top, popW, popH)));
+    }
 }

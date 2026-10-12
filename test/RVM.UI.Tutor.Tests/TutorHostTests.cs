@@ -563,32 +563,68 @@ public class TutorHostTests : BunitContext
     }
 
     [Fact]
-    public void Pose_animada_so_para_quem_nao_pediu_menos_movimento_e_sem_herdar_a_padrao()
+    public void Pose_animada_fica_por_cima_da_parada_e_sem_herdar_a_padrao()
     {
         var aly = TestData.Aly with { ImageAnimated = "/aly.webp" };
         var tour = new TourDefinition("animado", 1,
         [
-            new TourStep("alvo-1", "Passo 1", "Texto 1", Pose: "/aly-acena.png", PoseAnimated: "/aly-acena.webp"),
+            new TourStep("alvo-1", "Passo 1", "Texto 1", Pose: "/aly-acena.png", PoseAnimated: "/aly-acena.webm?v=2"),
             new TourStep("alvo-2", "Passo 2", "Texto 2"),
             new TourStep("alvo-3", "Passo 3", "Texto 3", Pose: "/aly-explica.png"),
         ])
         { Presenter = aly };
         var cut = RenderWithTour(tour);
 
-        var source = cut.Find("picture source");
-        Assert.Equal("/aly-acena.webp", source.GetAttribute("srcset"));
-        Assert.Equal("(prefers-reduced-motion: no-preference)", source.GetAttribute("media"));
-        Assert.Equal("/aly-acena.png", cut.Find("picture img.tutor-presenter").GetAttribute("src"));
-        Assert.Equal("true", cut.Find("picture").GetAttribute("aria-hidden"));
+        // #60: a parada fica sempre; a animada vem numa camada própria, que o tutor.js mostra só com a voz.
+        Assert.Equal("/aly-acena.png", cut.Find("img.tutor-presenter:not(.tutor-presenter--talking)").GetAttribute("src"));
+        var video = cut.Find("video.tutor-presenter--talking");
+        Assert.Equal("/aly-acena.webm?v=2", video.GetAttribute("src"));
+        Assert.Equal("/aly-acena.png", video.GetAttribute("poster"));
+        Assert.True(video.HasAttribute("muted") && video.HasAttribute("loop") && video.HasAttribute("playsinline"));
+        Assert.Null(video.GetAttribute("autoplay"));
+        Assert.Equal("true", video.GetAttribute("aria-hidden"));
+        // A parada some enquanto ela fala (CSS por estas classes): senão aparece por baixo — duas mãos.
+        Assert.Contains("tutor-presenter--under-video", cut.Find("img.tutor-presenter").ClassName, StringComparison.Ordinal);
 
+        // Animada que não é vídeo (WebP, SVG): <img> na mesma camada.
         cut.Find(".tutor-btn--primary").Click();
         cut.WaitForAssertion(() => Assert.Equal("/aly.png", cut.Find(".tutor-presenter").GetAttribute("src")));
-        Assert.Equal("/aly.webp", cut.Find("picture source").GetAttribute("srcset"));
+        Assert.Equal("/aly.webp", cut.Find("img.tutor-presenter--talking").GetAttribute("src"));
+        Assert.Contains("tutor-presenter--under", cut.Find("img.tutor-presenter:not(.tutor-presenter--talking)").ClassName, StringComparison.Ordinal);
+        Assert.DoesNotContain("under-video", cut.Find("img.tutor-presenter:not(.tutor-presenter--talking)").ClassName, StringComparison.Ordinal);
+        Assert.Empty(cut.FindAll("video"));
 
         // Pose própria sem animada: fica parada, não pega a animação da imagem padrão.
         cut.Find(".tutor-btn--primary").Click();
         cut.WaitForAssertion(() => Assert.Equal("/aly-explica.png", cut.Find(".tutor-presenter").GetAttribute("src")));
-        Assert.Empty(cut.FindAll("picture source"));
+        Assert.Empty(cut.FindAll(".tutor-presenter--talking"));
+        Assert.DoesNotContain("under", cut.Find(".tutor-presenter").ClassName, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Balao_do_tour_tem_cabecalho_corpo_e_rodape()
+    {
+        var cut = RenderWithTour(TestData.Narrated(TestData.Aly));
+
+        // #60: título sozinho no cabeçalho; texto e botões do apresentador no corpo; contagem e ações no rodapé.
+        var dialog = cut.Find("[role=dialog]");
+        Assert.Equal(["tutor-header", "tutor-body", "tutor-footer"],
+            dialog.Children.Where(c => c.TagName == "DIV" && !c.ClassList.Contains("tutor-arrow")).Select(c => c.ClassName!));
+        Assert.NotNull(cut.Find(".tutor-header > .tutor-title"));
+        Assert.NotNull(cut.Find(".tutor-body > .tutor-text"));
+        Assert.NotNull(cut.Find(".tutor-body > .tutor-tools"));
+        Assert.NotNull(cut.Find(".tutor-footer > .tutor-progress"));
+    }
+
+    [Fact]
+    public void Tamanho_do_apresentador_vem_das_opcoes()
+    {
+        Tutor.Options.PresenterMaxHeight = 750;
+        Tutor.Options.PresenterViewportRatio = 0.8;
+        var cut = RenderWithTour(TestData.Narrated(TestData.Aly));
+
+        // Janela de 720: 80% = 576 px, abaixo do teto de 750.
+        Assert.Contains("height:576px", cut.Find(".tutor-presenter").GetAttribute("style"), StringComparison.Ordinal);
     }
 
     [Fact]
