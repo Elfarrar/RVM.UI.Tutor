@@ -1,0 +1,32 @@
+# Build
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+.vs/
+.idea/
+
+# Testes
+TestResults/
+coverage/
+*.coverage
+*.trx
+
+# Node (Playwright)
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/
+.auth/
+
+# Segredos
+.env
+.env.*
+docs/ACESSOS.md
+*.dump
+.playwright-mcp/
+
+# Worktrees do Claude Code
+.claude/

@@ -1,0 +1,38 @@
+@page "/tema"
+@inject ITutor Tutor
+@inject SampleTheme Theme
+
+<PageTitle>Tema — RVM.UI.Tutor</PageTitle>
+
+<h1>Tema</h1>
+
+<p>
+    O padrão segue o sistema (claro/escuro). O app força um tema com <code>data-tutor-theme</code> ou troca a
+    aparência com variáveis <code>--tutor-*</code> — é assim que o RVM.UI aplica a pele do ecossistema.
+</p>
+
+<fieldset class="painel" data-tour="@SampleTargets.ThemePicker">
+    <legend>Tema do tour</legend>
+    @foreach (var (rotulo, modo, custom) in Opcoes)
+    {
+        <label class="opcao">
+            <input type="radio" name="tema" checked="@(Theme.Mode == modo && Theme.Custom == custom)"
+                   disabled="@(!RendererInfo.IsInteractive)" @onchange="() => Theme.Set(modo, custom)" />
+            @rotulo
+        </label>
+    }
+</fieldset>
+
+<p><button type="button" class="botao botao--primario" disabled="@(!RendererInfo.IsInteractive)" @onclick="Iniciar">Ver o tour neste tema</button></p>
+
+@code {
+    private static readonly (string Rotulo, string? Modo, bool Custom)[] Opcoes =
+    [
+        ("Seguir o sistema", null, false),
+        ("Claro", "light", false),
+        ("Escuro", "dark", false),
+        ("Personalizado (variáveis --tutor-*)", null, true),
+    ];
+
+    private Task Iniciar() => Tutor.StartAsync(SampleTours.Theme, force: true);
+}

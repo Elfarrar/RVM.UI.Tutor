@@ -1,0 +1,38 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject SampleTheme Theme
+
+<div class="app" data-tutor-theme="@Theme.Mode" style="@Theme.Style">
+    <header class="topo" data-tour="@SampleTargets.Menu">
+        <a class="marca" href="">RVM.UI.Tutor</a>
+        <nav>
+            <NavLink href="tour-simples">Tour simples</NavLink>
+            <NavLink href="destaque">Destaque</NavLink>
+            <NavLink href="multi-pagina" Match="NavLinkMatch.Prefix">Multi-página</NavLink>
+            <NavLink href="espera-acao">Espera de ação</NavLink>
+            <NavLink href="tema">Tema</NavLink>
+            <NavLink href="apresentador">Apresentador</NavLink>
+            @* target="_top": carga completa, para o App subir esta página em WebAssembly. *@
+            <a href="wasm/tour-simples" target="_top">WASM</a>
+        </nav>
+    </header>
+
+    <main class="conteudo">
+        @Body
+    </main>
+
+    @* Uma vez, no layout: sobrevive à troca de página. *@
+    <TutorHost />
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    protected override void OnInitialized() => Theme.Changed += StateHasChanged;
+
+    public void Dispose() => Theme.Changed -= StateHasChanged;
+}

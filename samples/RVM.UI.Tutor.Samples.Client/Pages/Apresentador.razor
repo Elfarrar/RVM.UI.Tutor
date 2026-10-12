@@ -1,0 +1,50 @@
+@page "/apresentador"
+@implements IDisposable
+@inject ITutor Tutor
+
+<PageTitle>Apresentador — RVM.UI.Tutor</PageTitle>
+
+<h1>Apresentador</h1>
+
+<p>
+    Um personagem no canto da tela apresenta o tour e narra os passos que têm áudio. O usuário oculta o
+    personagem ou silencia pelo balão, e a escolha fica no progresso do tour.
+</p>
+
+<p>
+    <button type="button" class="botao botao--primario" disabled="@(!RendererInfo.IsInteractive)" @onclick="Iniciar">Iniciar tour</button>
+    <button type="button" class="botao" disabled="@(!RendererInfo.IsInteractive)" @onclick="Continuar">Continuar de onde parei</button>
+</p>
+
+<section class="painel" data-tour="@SampleTargets.PresenterHelp">
+    <p>
+        O áudio é pré-gerado (<code>tools/gerar-audio.py</code>) e só toca depois de um clique ou tecla na
+        página. Sem o personagem, o tour fica em silêncio.
+    </p>
+</section>
+
+<h2>Eventos</h2>
+<ol class="eventos" aria-label="Eventos do tour">
+    @foreach (var e in _eventos)
+    {
+        <li>@e.Kind @(e.StepIndex + 1)</li>
+    }
+</ol>
+
+@code {
+    private readonly List<TutorEvent> _eventos = [];
+
+    protected override void OnInitialized() => Tutor.EventRaised += Registrar;
+
+    private void Registrar(TutorEvent e)
+    {
+        _eventos.Add(e);
+        StateHasChanged();
+    }
+
+    private Task Iniciar() => Tutor.StartAsync(SampleTours.Presenter, SampleTours.User, force: true);
+
+    private Task Continuar() => Tutor.StartAsync(SampleTours.Presenter, SampleTours.User);
+
+    public void Dispose() => Tutor.EventRaised -= Registrar;
+}

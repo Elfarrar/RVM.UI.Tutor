@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/RVM.UI.Tutor.Samples.Client/RVM.UI.Tutor.Samples.Client.csproj" />
+    <Project Path="samples/RVM.UI.Tutor.Samples/RVM.UI.Tutor.Samples.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/RVM.UI.Tutor/RVM.UI.Tutor.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/RVM.UI.Tutor.Tests/RVM.UI.Tutor.Tests.csproj" />
+  </Folder>
+</Solution>

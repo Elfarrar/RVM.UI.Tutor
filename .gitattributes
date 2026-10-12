@@ -1,0 +1,18 @@
+* text=auto
+
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.sh     text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+*.cs     text eol=lf
+*.razor  text eol=lf
+*.css    text eol=lf
+*.csproj text eol=lf
+*.slnx   text eol=lf
+*.mjs    text eol=lf
+*.ts     text eol=lf
+
+*.png   binary
+*.woff2 binary
+*.svg   -text

@@ -1,0 +1,128 @@
+@namespace RVM.UI.Tutor
+@implements IAsyncDisposable
+
+@if (_mode != HostMode.None)
+{
+    <div class="tutor-root">
+        <svg class="tutor-overlay" aria-hidden="true">
+            <defs>
+                <mask id="@MaskId">
+                    <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                    @if (Hole is { } hole)
+                    {
+                        <rect class="tutor-hole" x="@Px(hole.X)" y="@Px(hole.Y)" width="@Px(hole.Width)" height="@Px(hole.Height)"
+                              rx="@Px(Tutor.Options.Radius)" fill="black" />
+                    }
+                </mask>
+            </defs>
+            <rect class="tutor-overlay-fill" x="0" y="0" width="100%" height="100%" mask="url(#@MaskId)" />
+            @* Bloqueiam o clique fora do recorte; dentro dele o clique chega ao alvo. mousedown:preventDefault:
+               clicar no fundo não tira o foco do balão (senão o ESC deixa de chegar nele). *@
+            <g class="tutor-blockers" @onclick="OnOverlayClick" @onmousedown:preventDefault="true">
+                @foreach (var b in Blockers)
+                {
+                    <rect class="tutor-blocker" x="@Px(b.X)" y="@Px(b.Y)" width="@Px(b.Width)" height="@Px(b.Height)" />
+                }
+            </g>
+        </svg>
+
+        @if (ShowPresenter && _presenterPose is { } pose && _presenterBox is { } box)
+        {
+            @* Decorativa: quem fala é o balão. Sem clique (a camada não pega), não cobre alvo nem balão.
+               A animada só para quem não pediu menos movimento; o navegador escolhe, sem JS. *@
+            <picture aria-hidden="true">
+                @if (pose.Animated is { } animated)
+                {
+                    <source srcset="@animated" media="(prefers-reduced-motion: no-preference)" />
+                }
+                <img class="tutor-presenter" src="@pose.Still" alt=""
+                     style="top:@Px(box.Y)px;left:@Px(box.X)px;width:@Px(box.Width)px;height:@Px(box.Height)px" />
+            </picture>
+        }
+
+        @if (ShowWaiting)
+        {
+            @* Espera do alvo ou da página do passo (#37): sem isto a tela fica só escura e nada é clicável. *@
+            @* Diálogo com foco, como o balão: o leitor de tela lê o texto ao focar e o Tab fica nos botões. *@
+            <div @ref="_waitingBox" class="@WaitingClass" role="dialog" aria-modal="true"
+                 aria-labelledby="@WaitingId" tabindex="-1">
+                <p id="@WaitingId" class="tutor-text">@Text("Waiting")</p>
+                <div class="tutor-footer">
+                    <div class="tutor-actions">
+                        @if (Tutor.Options.AllowSkip)
+                        {
+                            <button type="button" class="tutor-btn tutor-btn--ghost" @onclick="Tutor.SkipAsync">@Text("Skip")</button>
+                        }
+                        <button type="button" class="tutor-btn" @onclick="Tutor.CloseAsync">@Text("Close")</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (ShowPopover)
+        {
+            <div @ref="_popover" class="@PopoverClass" style="@PopoverStyle" role="dialog" aria-modal="@(WaitsForAction ? "false" : "true")"
+                 aria-labelledby="@(_mode == HostMode.Tour ? TitleId : TextId)" aria-describedby="@(_mode == HostMode.Tour ? TextId : null)"
+                 tabindex="-1">
+                @if (ShowArrow)
+                {
+                    <div class="tutor-arrow" style="@ArrowStyle"></div>
+                }
+                @if (_mode == HostMode.Tour && Tutor.CurrentStep is { } step)
+                {
+                    <h2 id="@TitleId" class="tutor-title">@step.Title</h2>
+                    <p id="@TextId" class="tutor-text">@step.Text</p>
+                    @if (step.Content is not null)
+                    {
+                        <div class="tutor-content">@step.Content</div>
+                    }
+                    @if (Tutor.Presenter is not null || ShowMute)
+                    {
+                        <div class="tutor-tools">
+                            @if (Tutor.Presenter is { } presenter)
+                            {
+                                <button type="button" class="tutor-btn tutor-btn--small" @onclick="OnTogglePresenter">
+                                    @string.Format(_culture, Text(Tutor.PresenterShown ? "HidePresenter" : "ShowPresenter"), presenter.Name)
+                                </button>
+                            }
+                            @if (ShowMute)
+                            {
+                                <button type="button" class="tutor-btn tutor-btn--small" @onclick="OnToggleMute">
+                                    @Text(Tutor.Muted ? "Unmute" : "Mute")
+                                </button>
+                            }
+                        </div>
+                    }
+                    <div class="tutor-footer">
+                        @if (Tutor.Options.ShowProgress)
+                        {
+                            <span class="tutor-progress">@string.Format(_culture, Text("Progress"), Tutor.Engine.Index + 1, Tutor.Engine.Tour!.Steps.Count)</span>
+                        }
+                        <div class="tutor-actions">
+                            @if (Tutor.Options.AllowSkip && !Tutor.Engine.IsLastStep)
+                            {
+                                <button type="button" class="tutor-btn tutor-btn--ghost" @onclick="Tutor.SkipAsync">@Text("Skip")</button>
+                            }
+                            @if (Tutor.Engine.Index > 0)
+                            {
+                                <button type="button" class="tutor-btn" @onclick="Tutor.BackAsync">@Text("Back")</button>
+                            }
+                            @if (ShowNext)
+                            {
+                                <button type="button" class="tutor-btn tutor-btn--primary" data-tutor-autofocus @onclick="Tutor.NextAsync">
+                                    @Text(Tutor.Engine.IsLastStep ? "Done" : "Next")
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (Tutor.Highlight is { } highlight)
+                {
+                    <p id="@TextId" class="tutor-text">@highlight.Text</p>
+                }
+                @* Por último no DOM: na ordem de Tab o × vem depois das ações (fica no canto pelo CSS). *@
+                <button type="button" class="tutor-close" aria-label="@Text("Close")" @onclick="OnCloseClick">&times;</button>
+            </div>
+        }
+    </div>
+}

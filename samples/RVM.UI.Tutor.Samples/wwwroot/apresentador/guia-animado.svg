@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">
+  <!-- Guia animado (a luz da antena pisca). Versão parada: guia.svg. -->
+  <g fill="none" stroke="#334155" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="100" y1="22" x2="100" y2="44"/>
+    <circle cx="100" cy="18" r="7" fill="#f59e0b">
+      <animate attributeName="fill" values="#f59e0b;#fde68a;#f59e0b" dur="1.6s" repeatCount="indefinite"/>
+    </circle>
+    <rect x="52" y="44" width="96" height="76" rx="22" fill="#e2e8f0"/>
+    <rect x="66" y="62" width="68" height="38" rx="14" fill="#0f172a"/>
+    <path d="M84 132 h32 v12 h-32 z" fill="#cbd5e1"/>
+    <rect x="46" y="144" width="108" height="96" rx="26" fill="#2563eb"/>
+    <circle cx="100" cy="182" r="12" fill="#bfdbfe"/>
+    <path d="M46 168 q-26 22 -20 56" />
+    <path d="M154 168 q26 22 20 56" />
+    <rect x="66" y="240" width="24" height="44" rx="10" fill="#cbd5e1"/>
+    <rect x="110" y="240" width="24" height="44" rx="10" fill="#cbd5e1"/>
+    <path d="M58 290 h40 M102 290 h40" stroke-width="8"/>
+  </g>
+  <g fill="#38bdf8">
+    <circle cx="86" cy="80" r="7"/>
+    <circle cx="114" cy="80" r="7"/>
+  </g>
+  <path d="M88 92 q12 8 24 0" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,59 @@
+@page "/tour-simples"
+@page "/wasm/tour-simples"
+@implements IDisposable
+@inject ITutor Tutor
+
+<PageTitle>Tour simples — RVM.UI.Tutor</PageTitle>
+
+<h1>Tour simples</h1>
+
+<p class="modo">Rodando em: <strong>@RendererInfo.Name</strong></p>
+
+@* Desabilitado até o circuito ligar: clique na página pré-renderizada não faria nada. *@
+
+<p>
+    <button type="button" class="botao botao--primario" disabled="@(!RendererInfo.IsInteractive)" @onclick="Iniciar">Iniciar tour</button>
+    <button type="button" class="botao" disabled="@(!RendererInfo.IsInteractive)" @onclick="Continuar">Continuar de onde parei</button>
+    <button type="button" class="botao" disabled="@(!RendererInfo.IsInteractive)" @onclick="IniciarComPulo">Tour com passo pulado</button>
+</p>
+
+<section class="painel">
+    <button type="button" class="botao" data-tour="@SampleTargets.NewEntry">Novo lançamento</button>
+    <ul class="lista" data-tour="@SampleTargets.EntryList">
+        <li>Cimento CP-II, 50 sacos</li>
+        <li>Diária de pedreiro</li>
+        <li>Areia média, 6 m³</li>
+    </ul>
+</section>
+
+<div class="espaco" aria-hidden="true"></div>
+
+<footer class="rodape" data-tour="@SampleTargets.Footer">Suporte: ajuda@exemplo.com</footer>
+
+<h2>Eventos</h2>
+<ol class="eventos" aria-label="Eventos do tour">
+    @foreach (var e in _eventos)
+    {
+        <li>@e.Kind @(e.StepIndex + 1)</li>
+    }
+</ol>
+
+@code {
+    private readonly List<TutorEvent> _eventos = [];
+
+    protected override void OnInitialized() => Tutor.EventRaised += Registrar;
+
+    private void Registrar(TutorEvent e)
+    {
+        _eventos.Add(e);
+        StateHasChanged();
+    }
+
+    private Task Iniciar() => Tutor.StartAsync(SampleTours.Simple, SampleTours.User, force: true);
+
+    private Task IniciarComPulo() => Tutor.StartAsync(SampleTours.WithSkip, SampleTours.User, force: true);
+
+    private Task Continuar() => Tutor.StartAsync(SampleTours.Simple, SampleTours.User);
+
+    public void Dispose() => Tutor.EventRaised -= Registrar;
+}

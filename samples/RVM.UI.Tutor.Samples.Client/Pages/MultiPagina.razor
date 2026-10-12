@@ -1,0 +1,19 @@
+@page "/multi-pagina"
+@inject ITutor Tutor
+
+<PageTitle>Multi-página — RVM.UI.Tutor</PageTitle>
+
+<h1>Multi-página</h1>
+
+<p>O passo 2 mora em outra página: o tour navega sozinho e continua lá; o passo 3 volta para cá.</p>
+
+<p><button type="button" class="botao botao--primario" disabled="@(!RendererInfo.IsInteractive)" @onclick="Iniciar">Iniciar tour entre páginas</button></p>
+
+<section class="painel" data-tour="@SampleTargets.Summary">
+    <strong>Resumo</strong>
+    <p>3 obras em andamento · R$ 48.200,00 lançados no mês.</p>
+</section>
+
+@code {
+    private Task Iniciar() => Tutor.StartAsync(SampleTours.MultiPage, force: true);
+}

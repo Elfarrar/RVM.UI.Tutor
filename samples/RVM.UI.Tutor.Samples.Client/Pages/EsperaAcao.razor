@@ -1,0 +1,74 @@
+@page "/espera-acao"
+@implements IDisposable
+@inject ITutor Tutor
+
+<PageTitle>Espera de ação — RVM.UI.Tutor</PageTitle>
+
+<h1>Espera de ação</h1>
+
+<p>
+    O passo 1 só avança quando você clica em "Nova obra" (o clique chega ao app normalmente). O formulário
+    demora 1 s para aparecer: o tour espera. O passo 2 avança quando o nome é preenchido; o 4 aponta para
+    algo que nunca aparece e é pulado.
+</p>
+
+<p><button type="button" class="botao botao--primario" disabled="@(!RendererInfo.IsInteractive)" @onclick="Iniciar">Iniciar tour</button></p>
+
+<section class="painel">
+    <button type="button" class="botao" data-tour="@SampleTargets.NewProject" @onclick="NovaObra">Nova obra</button>
+
+    @if (_formulario)
+    {
+        <div class="campo" data-tour="@SampleTargets.ProjectName">
+            <label for="nome-obra">Nome da obra</label>
+            <input id="nome-obra" @bind="_nome" />
+        </div>
+        <button type="button" class="botao" data-tour="@SampleTargets.SaveProject" @onclick="Salvar">Salvar</button>
+    }
+
+    @if (_salva is not null)
+    {
+        <p role="status">Obra salva: @_salva</p>
+    }
+</section>
+
+<h2>Eventos</h2>
+<ol class="eventos" aria-label="Eventos do tour">
+    @foreach (var e in _eventos)
+    {
+        <li>@e.Kind @(e.StepIndex + 1)</li>
+    }
+</ol>
+
+@code {
+    private readonly List<TutorEvent> _eventos = [];
+    private bool _formulario;
+    private string _nome = "";
+    private string? _salva;
+
+    protected override void OnInitialized() => Tutor.EventRaised += Registrar;
+
+    private void Registrar(TutorEvent e)
+    {
+        _eventos.Add(e);
+        StateHasChanged();
+    }
+
+    private Task Iniciar()
+    {
+        _formulario = false;
+        _salva = null;
+        return Tutor.StartAsync(SampleTours.WaitForAction, force: true);
+    }
+
+    // Simula um formulário que depende de uma chamada ao servidor.
+    private async Task NovaObra()
+    {
+        await Task.Delay(1000);
+        _formulario = true;
+    }
+
+    private void Salvar() => _salva = _nome;
+
+    public void Dispose() => Tutor.EventRaised -= Registrar;
+}

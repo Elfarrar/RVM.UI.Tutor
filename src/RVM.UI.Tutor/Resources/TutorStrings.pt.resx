@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Next" xml:space="preserve"><value>Próximo</value></data>
+  <data name="Back" xml:space="preserve"><value>Voltar</value></data>
+  <data name="Done" xml:space="preserve"><value>Concluir</value></data>
+  <data name="Skip" xml:space="preserve"><value>Pular</value></data>
+  <data name="Close" xml:space="preserve"><value>Fechar</value></data>
+  <data name="Progress" xml:space="preserve"><value>{0} de {1}</value></data>
+  <data name="ShowPresenter" xml:space="preserve"><value>Mostrar {0}</value></data>
+  <data name="HidePresenter" xml:space="preserve"><value>Ocultar {0}</value></data>
+  <data name="Mute" xml:space="preserve"><value>Silenciar</value></data>
+  <data name="Unmute" xml:space="preserve"><value>Ativar som</value></data>
+  <data name="Waiting" xml:space="preserve"><value>Procurando o próximo passo…</value></data>
+</root>

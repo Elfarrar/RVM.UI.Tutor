@@ -1,0 +1,31 @@
+@page "/destaque"
+@inject ITutor Tutor
+
+<PageTitle>Destaque avulso — RVM.UI.Tutor</PageTitle>
+
+<h1>Destaque avulso</h1>
+
+<p>Um elemento em foco, sem tour: útil para confirmar uma ação ("seu lançamento foi salvo aqui").</p>
+
+<p><button type="button" class="botao botao--primario" data-tour="@SampleTargets.SaveButton" disabled="@(!RendererInfo.IsInteractive)" @onclick="Salvar">Salvar lançamento</button></p>
+
+<section class="painel">
+    <ul class="lista">
+        <li>Diária de pedreiro</li>
+        @if (_salvo)
+        {
+            <li data-tour="@SampleTargets.SavedEntry">Cimento CP-II, 50 sacos</li>
+        }
+    </ul>
+</section>
+
+@code {
+    private bool _salvo;
+
+    private async Task Salvar()
+    {
+        _salvo = true;
+        // O host só procura o alvo depois que este render chega ao navegador.
+        await Tutor.HighlightAsync(SampleTargets.SavedEntry, "Seu lançamento foi salvo aqui.", TimeSpan.FromSeconds(6));
+    }
+}
