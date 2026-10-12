@@ -7,15 +7,13 @@ namespace RVM.UI.Tutor;
 /// <param name="Status">Situação.</param>
 /// <param name="LastStep">Índice (base 0) do último passo mostrado, para retomar.</param>
 /// <param name="UpdatedAt">Quando mudou, em UTC.</param>
-/// <param name="ShowPresenter">Escolha do usuário sobre o apresentador; <c>null</c> = o tour não tem apresentador.</param>
 public sealed record TutorProgress(
     string TourId,
     string User,
     int Version,
     TourStatus Status,
     int LastStep,
-    DateTimeOffset UpdatedAt,
-    bool? ShowPresenter = null);
+    DateTimeOffset UpdatedAt);
 
 /// <summary>Situação do tour para um usuário.</summary>
 public enum TourStatus { InProgress, Completed, Skipped }

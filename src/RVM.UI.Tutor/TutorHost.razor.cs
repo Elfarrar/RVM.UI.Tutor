@@ -30,7 +30,6 @@ public partial class TutorHost : IAsyncDisposable
     private HostMode _mode;
     private object? _shown;
     private bool _locatePending, _measurePending, _focusPending, _deactivatePending, _awaitingRoute, _actionArmed;
-    private bool _focusAfterMeasure = true;
     private bool _waiting, _waitingFocusPending, _disposed;
     private int _waitingEpoch; // muda a cada passo: timer de um passo anterior não mostra o aviso
     private object? _spoken;
@@ -96,8 +95,6 @@ public partial class TutorHost : IAsyncDisposable
         var path = url.Split('?', '#')[0];
         return path.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
     }
-
-    private bool ShowMute => Tutor.CurrentStep?.Audio is not null && Tutor.CanSpeak;
 
     // Passo que espera clique/campo: sem "Próximo". Volta se o alvo sumiu (centralizado) ou se a ação
     // não pode acontecer (botão desabilitado, campo já preenchido): o usuário nunca fica preso.
@@ -208,9 +205,7 @@ public partial class TutorHost : IAsyncDisposable
             _popoverWidth = size.Width;
             _popoverHeight = size.Height;
             Reposition();
-            // Remedido por um botão do próprio balão: o foco fica nele, não pula para o "Próximo".
-            _focusPending = _focusAfterMeasure;
-            _focusAfterMeasure = true;
+            _focusPending = true;
             StateHasChanged();
             return;
         }
@@ -222,8 +217,7 @@ public partial class TutorHost : IAsyncDisposable
         }
     }
 
-    // Toca o áudio do passo uma vez por passo mostrado; para ao trocar de passo, ocultar o
-    // apresentador, silenciar ou fechar. Religar/reativar o som toca o passo de novo.
+    // Toca o áudio do passo uma vez por passo mostrado; para ao trocar de passo ou fechar (X, Esc).
     private async Task SyncAudioAsync()
     {
         var audio = ShowPopover && _mode == HostMode.Tour ? Tutor.StepAudio : null;
@@ -331,7 +325,6 @@ public partial class TutorHost : IAsyncDisposable
         _locatePending = mode == HostMode.Highlight || (mode == HostMode.Tour && engine.State == TutorState.Preparing);
         _measurePending = mode == HostMode.Tour && engine.State == TutorState.Showing;
         _focusPending = false;
-        _focusAfterMeasure = true;
         if (mode != HostMode.Tour || engine.Tour!.Id != _presenterTour)
         {
             _presenterBox = null;
@@ -401,25 +394,6 @@ public partial class TutorHost : IAsyncDisposable
                 await Tutor.BackAsync();
                 break;
         }
-    }
-
-    // Os botões mudam de texto (e o "Silenciar" some com o apresentador): mede o balão de novo.
-    private async Task OnTogglePresenter()
-    {
-        await Tutor.TogglePresenterAsync();
-        RemeasureKeepingFocus();
-    }
-
-    private void OnToggleMute()
-    {
-        Tutor.ToggleMute();
-        RemeasureKeepingFocus();
-    }
-
-    private void RemeasureKeepingFocus()
-    {
-        _measurePending = true;
-        _focusAfterMeasure = false;
     }
 
     private async Task OnCloseClick()

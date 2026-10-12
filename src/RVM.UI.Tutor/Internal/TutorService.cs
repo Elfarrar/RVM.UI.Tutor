@@ -26,32 +26,28 @@ internal sealed class TutorService(ITutorProgressStore store, TutorOptions optio
     public bool IsActive => Engine.IsActive;
     public TourStep? CurrentStep => Engine.CurrentStep;
 
-    /// <summary>Apresentador do tour aberto (o do tour, senão o global), mesmo oculto pelo usuário.</summary>
+    /// <summary>Apresentador do tour aberto (o do tour, senão o global), mesmo desligado por <c>ShowPresenter</c>.</summary>
     public TourPresenter? Presenter => Engine.IsActive ? Engine.Tour!.Presenter ?? options.Presenter : null;
 
     public bool PresenterShown => Presenter is not null && _presenterOn;
 
-    /// <summary>Som desligado pelo usuário; vale até o fim do circuito (Server) ou da aba (WASM).</summary>
-    public bool Muted { get; private set; }
-
-    /// <summary>A voz é do apresentador: oculto, ele não fala. Tour sem apresentador fala sozinho.</summary>
+    /// <summary>A voz é do apresentador: desligado, ele não fala. Tour sem apresentador fala sozinho.</summary>
     public bool CanSpeak => Presenter is null || _presenterOn;
 
     /// <summary>Áudio que deve estar tocando agora, ou <c>null</c>.</summary>
     public string? StepAudio =>
-        Engine.State == TutorState.Showing && CanSpeak && !Muted ? Engine.CurrentStep!.Audio : null;
+        Engine.State == TutorState.Showing && CanSpeak ? Engine.CurrentStep!.Audio : null;
 
     public async Task StartAsync(TourDefinition tour, string? user = null, bool force = false)
     {
         ArgumentNullException.ThrowIfNull(tour);
-        // Lido mesmo com force: o "do começo" recomeça os passos, não a escolha do apresentador.
         TutorProgress? saved = null;
-        if (user is not null)
+        if (user is not null && !force)
             (_, saved) = await LoadAsync(tour.Id, user);
         var start = !force && saved is { Status: TourStatus.InProgress } && saved.Version == tour.Version
             ? saved.LastStep
             : 0;
-        await BeginAsync(tour, user, start, saved);
+        await BeginAsync(tour, user, start);
     }
 
     public async Task<bool> StartIfNeverSeenAsync(TourDefinition tour, string user)
@@ -65,24 +61,8 @@ internal sealed class TutorService(ITutorProgressStore store, TutorOptions optio
         var (read, saved) = await LoadAsync(tour.Id, user);
         if (!read || (saved is not null && (saved.Version >= tour.Version || !tour.ShowAgainOnNewVersion)))
             return false;
-        await BeginAsync(tour, user, 0, saved);
+        await BeginAsync(tour, user, 0);
         return true;
-    }
-
-    /// <summary>O usuário ligou/desligou o apresentador no balão. Fica no progresso, para valer ao retomar.</summary>
-    public async Task TogglePresenterAsync()
-    {
-        if (Presenter is null || Engine.State != TutorState.Showing)
-            return;
-        _presenterOn = !_presenterOn;
-        Changed?.Invoke();
-        await SaveAsync(TourStatus.InProgress, Engine.Index);
-    }
-
-    public void ToggleMute()
-    {
-        Muted = !Muted;
-        Changed?.Invoke();
     }
 
     public Task NextAsync() => ApplyAsync(Engine.Next());
@@ -146,12 +126,12 @@ internal sealed class TutorService(ITutorProgressStore store, TutorOptions optio
         _highlightTimer = null;
     }
 
-    private Task BeginAsync(TourDefinition tour, string? user, int start, TutorProgress? saved)
+    private Task BeginAsync(TourDefinition tour, string? user, int start)
     {
         CancelHighlightTimer();
         Highlight = null;
         _user = user;
-        _presenterOn = saved?.ShowPresenter ?? tour.ShowPresenter ?? options.ShowPresenter;
+        _presenterOn = tour.ShowPresenter ?? options.ShowPresenter;
         return ApplyAsync(Engine.Start(tour, start));
     }
 
@@ -208,10 +188,9 @@ internal sealed class TutorService(ITutorProgressStore store, TutorOptions optio
         if (_user is null)
             return;
         var tour = Engine.Tour!;
-        bool? presenter = (tour.Presenter ?? options.Presenter) is null ? null : _presenterOn;
         try
         {
-            await store.SaveAsync(new TutorProgress(tour.Id, _user, tour.Version, status, step, DateTimeOffset.UtcNow, presenter));
+            await store.SaveAsync(new TutorProgress(tour.Id, _user, tour.Version, status, step, DateTimeOffset.UtcNow));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

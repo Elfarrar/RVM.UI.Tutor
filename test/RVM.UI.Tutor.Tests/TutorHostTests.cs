@@ -536,14 +536,10 @@ public class TutorHostTests : BunitContext
     // "-" = speak(null), o áudio parou.
     private string[] Spoken => [.. _js.Invocations["speak"].Select(c => (string?)c.Arguments[0] ?? "-")];
 
-    private AngleSharp.Dom.IElement Tool(IRenderedComponent<TutorHost> cut, string text) =>
-        cut.FindAll(".tutor-tools button").Single(b => b.TextContent.Trim() == text);
-
     [Fact]
-    public void Sem_apresentador_nem_audio_nao_ha_ferramentas_nem_som()
+    public void Sem_apresentador_nem_audio_nao_ha_imagem_nem_som()
     {
         var cut = RenderWithTour(TestData.Tour());
-        Assert.Empty(cut.FindAll(".tutor-tools"));
         Assert.Empty(cut.FindAll(".tutor-presenter"));
         Assert.Empty(_js.Invocations["speak"]);
     }
@@ -606,13 +602,12 @@ public class TutorHostTests : BunitContext
     {
         var cut = RenderWithTour(TestData.Narrated(TestData.Aly));
 
-        // #60: título sozinho no cabeçalho; texto e botões do apresentador no corpo; contagem e ações no rodapé.
+        // #60: título sozinho no cabeçalho; texto no corpo; contagem e ações no rodapé.
         var dialog = cut.Find("[role=dialog]");
         Assert.Equal(["tutor-header", "tutor-body", "tutor-footer"],
             dialog.Children.Where(c => c.TagName == "DIV" && !c.ClassList.Contains("tutor-arrow")).Select(c => c.ClassName!));
         Assert.NotNull(cut.Find(".tutor-header > .tutor-title"));
         Assert.NotNull(cut.Find(".tutor-body > .tutor-text"));
-        Assert.NotNull(cut.Find(".tutor-body > .tutor-tools"));
         Assert.NotNull(cut.Find(".tutor-footer > .tutor-progress"));
     }
 
@@ -656,34 +651,39 @@ public class TutorHostTests : BunitContext
     }
 
     [Fact]
-    public void Ocultar_tira_a_imagem_e_a_voz_sem_tirar_o_foco_do_botao()
+    public void Quem_assiste_nao_tem_botao_de_ocultar_nem_de_silenciar()
     {
         var cut = RenderWithTour(TestData.Narrated(TestData.Aly));
+
+        // #66: apresentador e voz são decisão de quem configura o tour.
+        Assert.Single(cut.FindAll(".tutor-presenter"));
         Assert.Equal(["/p1.mp3"], Spoken);
-        Assert.Equal(["Ocultar Aly", "Silenciar"], cut.FindAll(".tutor-tools button").Select(b => b.TextContent.Trim()));
-
-        Tool(cut, "Ocultar Aly").Click();
-
-        cut.WaitForAssertion(() => Assert.Equal(2, _js.Invocations["measure"].Count));
-        Assert.Empty(cut.FindAll(".tutor-presenter"));
-        Assert.Equal(["Mostrar Aly"], cut.FindAll(".tutor-tools button").Select(b => b.TextContent.Trim()));
-        Assert.Equal(["/p1.mp3", "-"], Spoken);
-        Assert.Single(_js.Invocations["focus"]);
-
-        Tool(cut, "Mostrar Aly").Click();
-        cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".tutor-presenter")));
-        Assert.Equal(["/p1.mp3", "-", "/p1.mp3"], Spoken);
+        Assert.Empty(cut.FindAll(".tutor-body button"));
     }
 
     [Fact]
-    public void Silenciar_para_o_audio_e_reativar_toca_o_passo_de_novo()
+    public void Apresentador_desligado_no_tour_nao_aparece_nem_fala()
     {
-        var cut = RenderWithTour(TestData.Narrated());
-        Tool(cut, "Silenciar").Click();
-        cut.WaitForAssertion(() => Assert.Equal(["/p1.mp3", "-"], Spoken));
+        var cut = RenderWithTour(TestData.Narrated(TestData.Aly) with { ShowPresenter = false });
+        Assert.Empty(cut.FindAll(".tutor-presenter"));
+        Assert.Empty(_js.Invocations["speak"]);
+    }
 
-        Tool(cut, "Ativar som").Click();
-        cut.WaitForAssertion(() => Assert.Equal(["/p1.mp3", "-", "/p1.mp3"], Spoken));
+    [Theory]
+    [InlineData("fechar")]
+    [InlineData("esc")]
+    public void Fechar_ou_Esc_para_a_voz(string how)
+    {
+        var cut = RenderWithTour(TestData.Narrated(TestData.Aly));
+        Assert.Equal(["/p1.mp3"], Spoken);
+
+        // WCAG 1.4.2: sem botão de silenciar, fechar o tour é o jeito de parar a voz.
+        if (how == "fechar")
+            cut.Find(".tutor-close").Click();
+        else
+            cut.InvokeAsync(() => cut.Instance.OnKey("Escape"));
+
+        cut.WaitForAssertion(() => Assert.Equal(["/p1.mp3", "-"], Spoken));
     }
 
     [Fact]
@@ -692,7 +692,6 @@ public class TutorHostTests : BunitContext
         var cut = RenderWithTour(TestData.Narrated());
         cut.Find(".tutor-btn--primary").Click();
         cut.WaitForAssertion(() => Assert.Equal("Passo 2", cut.Find(".tutor-title").TextContent));
-        Assert.Empty(cut.FindAll(".tutor-tools")); // sem apresentador e passo sem áudio
 
         cut.Find(".tutor-btn--primary").Click();
         cut.WaitForAssertion(() => Assert.Equal(["/p1.mp3", "-", "/p3.mp3"], Spoken));
@@ -704,13 +703,5 @@ public class TutorHostTests : BunitContext
         var cut = RenderWithTour(TestData.Narrated(TestData.Aly));
         cut.InvokeAsync(() => cut.Instance.OnLayoutChanged(_layout with { ViewportWidth = 400 }));
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".tutor-presenter")));
-    }
-
-    [Fact]
-    public void Botoes_do_apresentador_em_ingles()
-    {
-        Services.GetRequiredService<TutorOptions>().Language = "en";
-        var cut = RenderWithTour(TestData.Narrated(TestData.Aly));
-        Assert.Equal(["Hide Aly", "Mute"], cut.FindAll(".tutor-tools button").Select(b => b.TextContent.Trim()));
     }
 }

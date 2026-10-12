@@ -14,7 +14,7 @@ public sealed record TourDefinition(string Id, int Version, IReadOnlyList<TourSt
     /// <summary>Apresentador deste tour; <c>null</c> = o de <see cref="TutorOptions.Presenter"/>.</summary>
     public TourPresenter? Presenter { get; init; }
 
-    /// <summary>Se o apresentador começa visível neste tour; <c>null</c> = <see cref="TutorOptions.ShowPresenter"/>.</summary>
+    /// <summary>Se o apresentador aparece neste tour; <c>null</c> = <see cref="TutorOptions.ShowPresenter"/>.</summary>
     public bool? ShowPresenter { get; init; }
 }
 

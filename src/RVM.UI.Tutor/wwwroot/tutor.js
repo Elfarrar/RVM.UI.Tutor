@@ -27,7 +27,7 @@ export function createHost(dotnet) {
       if (speaking) { v.currentTime = 0; v.play().catch(() => {}); } else v.pause();
     }
   };
-  // Vídeo que entra (ou troca de src) no meio da fala — "Mostrar Aly", re-render — começa a rodar ao carregar.
+  // Vídeo que entra (ou troca de src) no meio da fala — troca de passo, re-render — começa a rodar ao carregar.
   // Eventos de mídia não sobem; na captura chegam ao documento.
   document.addEventListener('loadeddata', e => {
     if (speaking && e.target.matches?.('video.tutor-presenter--talking')) e.target.play().catch(() => {});

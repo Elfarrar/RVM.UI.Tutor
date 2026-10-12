@@ -164,18 +164,6 @@
     color: var(--tutor-accent-fg, var(--_tutor-accent-fg));
 }
 
-.tutor-btn--small {
-    padding: 0.25rem 0.625rem;
-    font-size: 0.8125rem;
-}
-
-.tutor-tools {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-}
-
 /* Apresentador: apoiado no rodapé, num canto livre (Positioner.Presenter); a posição vem inline. */
 .tutor-presenter {
     position: fixed;

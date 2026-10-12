@@ -321,7 +321,7 @@ public class TutorServicePresenterTests
     }
 
     [Fact]
-    public async Task Sem_apresentador_o_audio_toca_sozinho_e_o_progresso_nao_guarda_escolha()
+    public async Task Sem_apresentador_o_audio_toca_sozinho()
     {
         await StartAsync(TestData.Narrated());
 
@@ -329,18 +329,17 @@ public class TutorServicePresenterTests
         Assert.False(_tutor.PresenterShown);
         Assert.True(_tutor.CanSpeak);
         Assert.Equal("/p1.mp3", _tutor.StepAudio);
-        Assert.Null(_store.Saved[("narrado", "u")].ShowPresenter);
     }
 
     [Fact]
-    public async Task Apresentador_global_aparece_e_o_progresso_guarda_que_estava_visivel()
+    public async Task Apresentador_global_aparece_e_fala()
     {
         _options.Presenter = TestData.Aly;
         await StartAsync(TestData.Narrated());
 
         Assert.Same(TestData.Aly, _tutor.Presenter);
         Assert.True(_tutor.PresenterShown);
-        Assert.True(_store.Saved[("narrado", "u")].ShowPresenter);
+        Assert.Equal("/p1.mp3", _tutor.StepAudio);
     }
 
     [Fact]
@@ -364,74 +363,21 @@ public class TutorServicePresenterTests
     }
 
     [Fact]
-    public async Task Ocultar_cala_o_apresentador_e_salva_a_escolha_no_passo_atual()
+    public async Task Apresentador_desligado_por_quem_configura_nao_aparece_nem_fala()
     {
-        await StartAsync(TestData.Narrated(TestData.Aly));
-        await _tutor.TogglePresenterAsync();
+        await StartAsync(TestData.Narrated(TestData.Aly) with { ShowPresenter = false });
 
+        Assert.Same(TestData.Aly, _tutor.Presenter);
         Assert.False(_tutor.PresenterShown);
         Assert.False(_tutor.CanSpeak);
         Assert.Null(_tutor.StepAudio);
-        Assert.Equal(new { Status = TourStatus.InProgress, Step = 0, Show = (bool?)false },
-            _store.Saved[("narrado", "u")] is var p ? new { p.Status, Step = p.LastStep, Show = p.ShowPresenter } : null);
+    }
 
-        await _tutor.TogglePresenterAsync();
-        Assert.True(_tutor.PresenterShown);
+    [Fact]
+    public async Task Passo_sem_audio_nao_toca()
+    {
+        await StartAsync(TestData.Narrated(TestData.Aly));
         Assert.Equal("/p1.mp3", _tutor.StepAudio);
-    }
-
-    [Fact]
-    public async Task A_escolha_volta_ao_retomar_e_ao_recomecar_com_force()
-    {
-        await StartAsync(TestData.Narrated(TestData.Aly));
-        await _tutor.TogglePresenterAsync();
-        await _tutor.CloseAsync();
-
-        await StartAsync(TestData.Narrated(TestData.Aly));
-        Assert.False(_tutor.PresenterShown);
-
-        await StartAsync(TestData.Narrated(TestData.Aly), force: true);
-        Assert.Equal(0, _tutor.Engine.Index);
-        Assert.False(_tutor.PresenterShown);
-    }
-
-    [Fact]
-    public async Task Sem_usuario_a_escolha_vale_so_neste_tour()
-    {
-        await StartAsync(TestData.Narrated(TestData.Aly), user: null);
-        await _tutor.TogglePresenterAsync();
-        Assert.False(_tutor.PresenterShown);
-        Assert.Equal(0, _store.Saves);
-    }
-
-    [Fact]
-    public async Task Alternar_sem_apresentador_ou_fora_do_passo_mostrado_nao_faz_nada()
-    {
-        await _tutor.TogglePresenterAsync();
-        await StartAsync(TestData.Narrated());
-        await _tutor.TogglePresenterAsync();
-        Assert.True(_tutor.CanSpeak);
-
-        await _tutor.StartAsync(TestData.Narrated(TestData.Aly), "u");
-        var saves = _store.Saves;
-        await _tutor.TogglePresenterAsync(); // ainda em Preparing
-        Assert.True(_tutor.PresenterShown);
-        Assert.Equal(saves, _store.Saves);
-    }
-
-    [Fact]
-    public async Task Mudo_cala_ate_ser_desfeito_e_passo_sem_audio_nao_toca()
-    {
-        await StartAsync(TestData.Narrated(TestData.Aly));
-        var changes = 0;
-        _tutor.Changed += () => changes++;
-
-        _tutor.ToggleMute();
-        Assert.True(_tutor.Muted);
-        Assert.Null(_tutor.StepAudio);
-        _tutor.ToggleMute();
-        Assert.Equal("/p1.mp3", _tutor.StepAudio);
-        Assert.Equal(2, changes);
 
         await _tutor.NextAsync();
         Assert.Null(_tutor.StepAudio); // Preparing

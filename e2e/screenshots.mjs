@@ -74,16 +74,13 @@ for (const scheme of ['light', 'dark']) {
   const page = await newPage({ colorScheme: scheme });
   await page.goto(`${base}/apresentador`);
   await page.getByRole('button', { name: 'Iniciar tour' }).click();
-  await page.locator('.tutor-presenter').waitFor();
+  await page.locator('.tutor-presenter').first().waitFor({ state: 'attached' });
   await visible(page);
   await shot(page, `apresentador-passo-1-${scheme}`);
   for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Próximo' }).click();
-  await page.getByRole('heading', { name: 'Do seu jeito' }).waitFor();
+  await page.getByRole('heading', { name: 'Quando quiser parar' }).waitFor();
   await visible(page);
   await shot(page, `apresentador-passo-3-${scheme}`);
-  await page.getByRole('button', { name: 'Ocultar Guia' }).click();
-  await page.getByRole('button', { name: 'Mostrar Guia' }).waitFor();
-  await shot(page, `apresentador-oculto-${scheme}`);
   await page.close();
 }
 await browser.close();

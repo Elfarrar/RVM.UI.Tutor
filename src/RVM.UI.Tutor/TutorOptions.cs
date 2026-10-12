@@ -24,7 +24,7 @@ public sealed class TutorOptions
     /// <summary>Apresentador de todos os tours; o tour troca com <see cref="TourDefinition.Presenter"/>. <c>null</c> = sem apresentador.</summary>
     public TourPresenter? Presenter { get; set; }
 
-    /// <summary>O apresentador começa visível. O usuário muda no balão, e a escolha fica no progresso do tour.</summary>
+    /// <summary>Mostra o apresentador (e a voz dele). Decisão de quem configura o tour; quem assiste não muda (#66).</summary>
     public bool ShowPresenter { get; set; } = true;
 
     /// <summary>Altura máxima do apresentador, em px. Sem canto livre nesse tamanho, ele encolhe até caber (mínimo 140 px; abaixo disso some).</summary>

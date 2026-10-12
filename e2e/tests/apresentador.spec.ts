@@ -57,46 +57,32 @@ test('@smoke apresentador aparece no canto e narra cada passo', async ({ page })
   await expect.poll(() => falas(page)).toEqual(['/apresentador/passo-1.mp3', 'pausa', '/apresentador/passo-2.mp3']);
 });
 
-test('passo sem áudio não mostra Silenciar e para a fala anterior', async ({ page }) => {
+test('passo sem áudio para a fala anterior', async ({ page }) => {
   await abrirTour(page);
   for (const passo of ['2 de 4', '3 de 4', '4 de 4']) {
     await balao(page).getByRole('button', { name: 'Próximo' }).click();
     await expect(balao(page).getByText(passo)).toBeVisible();
   }
-  await expect(balao(page).getByRole('button', { name: 'Silenciar' })).toHaveCount(0);
   await expect(guia(page)).toBeVisible();
   await expect.poll(async () => (await falas(page)).at(-1)).toBe('pausa');
 });
 
-test('silenciar para a fala e o próximo passo fica quieto até reativar', async ({ page }) => {
+// #66: apresentador e voz são de quem configura o tour; quem assiste para a voz fechando (WCAG 1.4.2).
+test('balão sem Ocultar nem Silenciar; Esc e Fechar param a voz', async ({ page }) => {
   await abrirTour(page);
-  await balao(page).getByRole('button', { name: 'Silenciar' }).click();
-  await expect(balao(page).getByRole('button', { name: 'Ativar som' })).toBeFocused();
-  await balao(page).getByRole('button', { name: 'Próximo' }).click();
-  await expect(balao(page).getByRole('heading', { name: 'Menu' })).toBeVisible();
-  expect(await falas(page)).toEqual(['/apresentador/passo-1.mp3', 'pausa']);
-
-  await balao(page).getByRole('button', { name: 'Ativar som' }).click();
-  await expect.poll(async () => (await falas(page)).at(-1)).toBe('/apresentador/passo-2.mp3');
-});
-
-test('ocultar o Guia tira imagem e voz, e a escolha vale ao retomar', async ({ page }) => {
-  await abrirTour(page);
-  await balao(page).getByRole('button', { name: 'Ocultar Guia' }).click();
-  await expect(guia(page)).toHaveCount(0);
-  await expect(balao(page).getByRole('button', { name: 'Mostrar Guia' })).toBeFocused();
-  await expect(balao(page).getByRole('button', { name: 'Silenciar' })).toHaveCount(0);
-
-  await balao(page).getByRole('button', { name: 'Próximo' }).click();
-  await expect(balao(page).getByRole('heading', { name: 'Menu' })).toBeVisible();
-  expect(await falas(page)).toEqual(['/apresentador/passo-1.mp3', 'pausa']);
+  await expect.poll(() => falas(page)).toEqual(['/apresentador/passo-1.mp3']);
+  await expect(balao(page).getByRole('button', { name: /Silenciar|Ocultar|Ativar som|Mostrar/ })).toHaveCount(0);
 
   await page.keyboard.press('Escape');
   await expect(balao(page)).toBeHidden();
+  await expect.poll(async () => (await falas(page)).at(-1)).toBe('pausa');
+
   await page.getByRole('button', { name: 'Iniciar tour' }).click();
   await expect(balao(page).getByRole('heading', { name: 'Oi!' })).toBeVisible();
-  await expect(balao(page).getByRole('button', { name: 'Mostrar Guia' })).toBeVisible();
-  await expect(guia(page)).toHaveCount(0);
+  await expect.poll(async () => (await falas(page)).at(-1)).toBe('/apresentador/passo-1.mp3');
+  await balao(page).getByRole('button', { name: 'Fechar' }).click();
+  await expect(balao(page)).toBeHidden();
+  await expect.poll(async () => (await falas(page)).at(-1)).toBe('pausa');
 });
 
 test('tela estreita esconde o apresentador e mantém a faixa', async ({ page }) => {
@@ -123,8 +109,8 @@ test('pose animada só enquanto a voz toca', async ({ page }) => {
   await balao(page).getByRole('button', { name: 'Próximo' }).click();
   await expect(falando(page)).toHaveAttribute('src', 'apresentador/guia-animado.svg');
   await expect(falando(page)).toBeVisible();
-  await balao(page).getByRole('button', { name: 'Silenciar' }).click();
-  await expect(falando(page)).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(falando(page)).toHaveCount(0);
 });
 
 test('pose parada para quem pede menos movimento, mesmo com a voz', async ({ page }) => {
@@ -150,6 +136,6 @@ test('trocar de passo não tira o apresentador da tela (sem refazer a entrada)',
   await balao(page).getByRole('button', { name: 'Próximo' }).click();
   await expect(balao(page).getByRole('heading', { name: 'Menu' })).toBeVisible();
   await balao(page).getByRole('button', { name: 'Próximo' }).click();
-  await expect(balao(page).getByRole('heading', { name: 'Do seu jeito' })).toBeVisible();
+  await expect(balao(page).getByRole('heading', { name: 'Quando quiser parar' })).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __saidas: number }).__saidas)).toBe(0);
 });

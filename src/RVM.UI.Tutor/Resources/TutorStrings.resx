@@ -10,9 +10,5 @@
   <data name="Skip" xml:space="preserve"><value>Skip</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
   <data name="Progress" xml:space="preserve"><value>{0} of {1}</value></data>
-  <data name="ShowPresenter" xml:space="preserve"><value>Show {0}</value></data>
-  <data name="HidePresenter" xml:space="preserve"><value>Hide {0}</value></data>
-  <data name="Mute" xml:space="preserve"><value>Mute</value></data>
-  <data name="Unmute" xml:space="preserve"><value>Unmute</value></data>
   <data name="Waiting" xml:space="preserve"><value>Looking for the next step…</value></data>
 </root>

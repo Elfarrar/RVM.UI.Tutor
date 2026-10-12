@@ -92,23 +92,6 @@
                         {
                             <div class="tutor-content">@step.Content</div>
                         }
-                        @if (Tutor.Presenter is not null || ShowMute)
-                        {
-                            <div class="tutor-tools">
-                                @if (Tutor.Presenter is { } presenter)
-                                {
-                                    <button type="button" class="tutor-btn tutor-btn--small" @onclick="OnTogglePresenter">
-                                        @string.Format(_culture, Text(Tutor.PresenterShown ? "HidePresenter" : "ShowPresenter"), presenter.Name)
-                                    </button>
-                                }
-                                @if (ShowMute)
-                                {
-                                    <button type="button" class="tutor-btn tutor-btn--small" @onclick="OnToggleMute">
-                                        @Text(Tutor.Muted ? "Unmute" : "Mute")
-                                    </button>
-                                }
-                            </div>
-                        }
                     </div>
                     <div class="tutor-footer">
                         @if (Tutor.Options.ShowProgress)

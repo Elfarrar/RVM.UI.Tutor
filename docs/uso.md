@@ -123,13 +123,12 @@ public interface ITutorProgressStore
     Task<TutorProgress?> GetAsync(string tourId, string user);
     Task SaveAsync(TutorProgress progress);
 }
-// TutorProgress(TourId, User, Version, Status: InProgress|Completed|Skipped, LastStep, UpdatedAt,
-//               ShowPresenter: bool? — escolha do usuário; null = tour sem apresentador)
+// TutorProgress(TourId, User, Version, Status: InProgress|Completed|Skipped, LastStep, UpdatedAt)
 ```
 
-Salvo a cada passo mostrado (`InProgress`), ao concluir, ao pular e ao ocultar/mostrar o
-apresentador. Sem `user`, nada é salvo. Store no banco: guarde também o `ShowPresenter`, senão a
-escolha "sem apresentador" se perde ao recarregar.
+Salvo a cada passo mostrado (`InProgress`), ao concluir e ao pular. Sem `user`, nada é salvo.
+`User` é texto livre: app com vários clientes em que a mesma pessoa vê o tour em cada um passa
+`"cliente:usuario"` (decisão de 12/10/2026, sem campo de tenant).
 
 ## 5. Apresentador e narração
 
@@ -140,7 +139,7 @@ biblioteca não traz personagem: ele vem do app ou da pele do RVM.UI (a Aly mora
 builder.Services.AddRvmTutor(o =>
 {
     o.Presenter = new TourPresenter("Aly", "img/aly.png", "img/aly.webp"); // todos os tours; 3º = animada (opcional)
-    o.ShowPresenter = true;                                // começa visível (padrão)
+    o.ShowPresenter = true;                                // mostra o apresentador (padrão)
 });
 
 var tour = new TourDefinition("lancamentos-primeiro", 1,
@@ -151,7 +150,7 @@ var tour = new TourDefinition("lancamentos-primeiro", 1,
 ])
 {
     Presenter = outraPersonagem, // opcional: troca a do registro só neste tour
-    ShowPresenter = false,       // opcional: começa oculto neste tour
+    ShowPresenter = false,       // opcional: sem apresentador (nem voz) neste tour
 };
 ```
 
@@ -164,16 +163,15 @@ var tour = new TourDefinition("lancamentos-primeiro", 1,
   ```
 - **Animação:** `TourPresenter.ImageAnimated` e `TourStep.PoseAnimated` são opcionais: vídeo WebM com
   alfa (ou MP4) vira `<video>`; WebP/GIF/SVG animado, `<img>`. A animada fica por cima da parada e
-  **só aparece enquanto a voz do passo toca**: a voz acabou, foi silenciada ou o passo não tem áudio,
+  **só aparece enquanto a voz do passo toca**: a voz acabou, o tour fechou ou o passo não tem áudio,
   fica a parada. Nunca com `prefers-reduced-motion: reduce`, nem no Safari para vídeo (ele não mostra
   o alfa do WebM). Passo com `Pose` própria e sem `PoseAnimated` fica parado: não herda a animação da
   imagem padrão.
-- **Chave:** o dev define o padrão (`ShowPresenter` no registro ou no tour); o usuário alterna no
-  balão ("Ocultar Aly" / "Mostrar Aly"). A escolha vale no tour inteiro, fica no progresso e volta
-  ao retomar e ao recomeçar com `force`.
-- **Voz:** a voz é do apresentador: oculto, ele não fala. Tour **sem** apresentador narra os passos
-  com `Audio` do mesmo jeito. "Silenciar" corta o som até o fim da sessão (não fica no progresso).
-  O áudio para ao trocar de passo e ao fechar, e **só começa depois de um clique ou tecla na
+- **Quem decide:** quem configura o tour (`ShowPresenter` no registro ou no tour, `Audio` em cada
+  passo). Quem assiste não tem botão de ocultar nem de silenciar (#66).
+- **Voz:** a voz é do apresentador: com `ShowPresenter = false`, ele não fala. Tour **sem** apresentador
+  narra os passos com `Audio` do mesmo jeito. O áudio para ao trocar de passo e ao fechar (X ou Esc —
+  o jeito de quem assiste parar a voz, WCAG 1.4.2), e **só começa depois de um clique ou tecla na
   página**: tour aberto sozinho no 1º login espera o primeiro gesto do usuário.
 - **Idioma:** o texto do passo é do app, e o áudio também: monte o tour com o `Audio` do idioma
   do usuário, como já faz com `Title` e `Text`.
